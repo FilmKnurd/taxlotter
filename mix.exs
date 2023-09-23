@@ -11,7 +11,7 @@ defmodule Taxlotter.MixProject do
       escript: escript()
     ]
   end
-  
+
   def escript do
     [main_module: TaxLotter.CLI]
   end

@@ -1,18 +1,9 @@
 defmodule Taxlotter do
   @moduledoc """
-  Documentation for `Taxlotter`.
+  Tax lot calculator
   """
 
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> Taxlotter.hello()
-      :world
-
-  """
-  def hello do
-    :world
+  def compute(_input_stream, _algo) do
+    # TODO: implement
   end
 end
