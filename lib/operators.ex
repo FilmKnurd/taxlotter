@@ -33,6 +33,12 @@ defmodule TaxLotter.Operators do
   end
 
   def process_lots(%{type: :sell} = trade, lot_acc) do
+    lots =
+      lot_acc.lots
+      |> sort_lots_by_algo(lot_acc.algo)
+      |> recusively_drain_lots(trade)
+
+    %{lot_acc | lots: lots}
   end
 
   defp lot_exists?(lots, date) do
@@ -55,5 +61,28 @@ defmodule TaxLotter.Operators do
         price: D.div(D.add(trade.price, &1.price), D.add(trade.qty, &1.qty))
       })
     )
+  end
+
+  defp sort_lots_by_algo(lots, :fifo), do: Enum.sort_by(lots, & &1.id)
+  defp sort_lots_by_algo(lots, :hifo), do: Enum.sort_by(lots, & &1.price, {:desc, Decimal})
+
+  defp recusively_drain_lots(lots, %{qty: qty_sold}) do
+    [lot | remaining_lots] = lots
+
+    rem = D.sub(lot.qty, qty_sold)
+
+    case D.compare(rem, 0) do
+      # Qty consumed, return remainig lots
+      :eq ->
+        [remaining_lots]
+
+      # More qty to consume, drain remaining lots
+      :lt ->
+        recusively_drain_lots(remaining_lots, %{qty: D.abs(rem)})
+
+      # Qty consumed, but current lot has shares remaining
+      :gt ->
+        [%{lot | qty: rem} | remaining_lots]
+    end
   end
 end

@@ -66,24 +66,8 @@ defmodule TaxLotter.OperatorsTest do
     end
 
     test "aggregates buy trades on the same lot by date" do
-      {:ok, given_trade1} =
-        Trade.create(%{
-          line: 1,
-          date: "2023-07-21",
-          type: "buy",
-          price: "100.00",
-          qty: "1.00000000"
-        })
-
-      {:ok, given_trade2} =
-        Trade.create(%{
-          line: 2,
-          date: "2023-07-21",
-          type: "buy",
-          price: "200.00",
-          qty: "1.00000000"
-        })
-
+      {:ok, given_trade1} = Trade.create(%{line: 1, date: "2023-07-21", type: "buy", price: "100.00", qty: "1.00000000"})
+      {:ok, given_trade2} = Trade.create(%{line: 2, date: "2023-07-21", type: "buy", price: "200.00", qty: "1.00000000"})
       given_acc = %{id: 0, algo: :fifo, lots: []}
       expected_price = Decimal.new("150.00")
       expected_qty = Decimal.new("2.00000000")
@@ -92,6 +76,40 @@ defmodule TaxLotter.OperatorsTest do
         Enum.reduce([given_trade1, given_trade2], given_acc, &Operators.process_lots/2)
 
       assert lot.id == 1
+      assert Decimal.compare(expected_price, lot.price) == :eq
+      assert Decimal.compare(expected_qty, lot.qty) == :eq
+    end
+
+    test "with fifo algo, drains earliest lot with sell trade" do
+      {:ok, given_trade1} = Trade.create(%{line: 1, date: "2023-07-21", type: "buy", price: "100.00", qty: "1.00000000"})
+      {:ok, given_trade2} = Trade.create(%{line: 2, date: "2023-07-22", type: "buy", price: "200.00", qty: "1.00000000"})
+      {:ok, given_trade3} = Trade.create(%{line: 3, date: "2023-07-23", type: "sell", price: "300.00", qty: "1.50000000"})
+      given_acc = %{id: 0, algo: :fifo, lots: []}
+      expected_lot_id = 2
+      expected_price = Decimal.new("200.00")
+      expected_qty = Decimal.new("0.50000000")
+      
+      %{lots: [lot]} =
+        Enum.reduce([given_trade1, given_trade2, given_trade3], given_acc, &Operators.process_lots/2)
+
+      assert lot.id == expected_lot_id
+      assert Decimal.compare(expected_price, lot.price) == :eq
+      assert Decimal.compare(expected_qty, lot.qty) == :eq
+    end
+    
+    test "with hifo algo, drains highest priced lot with sell trade" do
+      {:ok, given_trade1} = Trade.create(%{line: 1, date: "2023-07-21", type: "buy", price: "100.00", qty: "1.00000000"})
+      {:ok, given_trade2} = Trade.create(%{line: 2, date: "2023-07-22", type: "buy", price: "200.00", qty: "1.00000000"})
+      {:ok, given_trade3} = Trade.create(%{line: 3, date: "2023-07-23", type: "sell", price: "300.00", qty: "1.50000000"})
+      given_acc = %{id: 0, algo: :hifo, lots: []}
+      expected_lot_id = 1
+      expected_price = Decimal.new("100.00")
+      expected_qty = Decimal.new("0.50000000")
+      
+      %{lots: [lot]} =
+        Enum.reduce([given_trade1, given_trade2, given_trade3], given_acc, &Operators.process_lots/2)
+
+      assert lot.id == expected_lot_id
       assert Decimal.compare(expected_price, lot.price) == :eq
       assert Decimal.compare(expected_qty, lot.qty) == :eq
     end
