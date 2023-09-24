@@ -1,8 +1,9 @@
 defmodule TaxlotterTest do
   use ExUnit.Case
-  doctest Taxlotter
 
-  test "greets the world" do
-    assert Taxlotter.hello() == :world
+  describe "compute/2" do
+    @tag :skip
+    test "it processes stream" do
+    end
   end
 end

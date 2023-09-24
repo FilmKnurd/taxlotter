@@ -1,4 +1,4 @@
-defmodule TaxLotter.Cli do
+defmodule TaxLotter.CLI do
   @moduledoc """
   Command line entry point for TaxLotter tax lot calculator
 
