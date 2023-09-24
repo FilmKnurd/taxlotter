@@ -16,10 +16,9 @@ defmodule TaxLotter.CLI do
   # into the script instead of reading from a file.
   NimbleCSV.define(TradeParser, separator: ",")
 
+  alias Decimal, as: D
   alias OptionParser.ParseError
   alias TaxLotter.InvalidTrade
-
-  @algos ~W(fifo hifo)a
 
   def main(argv) do
     try do
@@ -35,6 +34,8 @@ defmodule TaxLotter.CLI do
     IO.stream(:line)
     |> TradeParser.parse_stream(skip_headers: false)
     |> TaxLotter.compute(algo)
+    |> Stream.map(&print_lot/1)
+    |> Stream.run()
   end
 
   defp parse_args([]), do: raise(ParseError, "Must provide an algorithm")
@@ -51,7 +52,7 @@ defmodule TaxLotter.CLI do
     end
   end
 
-  defp validate_algo(algo) when algo in ["fifo", "hifo"], do: String.to_existing_atom(algo)
+  defp validate_algo(algo) when algo in ["fifo", "hifo"], do: String.to_atom(algo)
   defp validate_algo(algo), do: raise(OptionParser.ParseError, "Invalid algorithm: #{algo}")
 
   defp print_error(%ParseError{} = e) do
@@ -89,5 +90,9 @@ defmodule TaxLotter.CLI do
 
       """
     ])
+  end
+
+  defp print_lot(lot) do
+    Bunt.puts([:chartreuse, "#{lot.id},#{Date.to_string(lot.date)},#{D.to_string(lot.price)},#{D.to_string(lot.qty)}\n"])
   end
 end
