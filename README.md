@@ -58,3 +58,30 @@ $ echo -e '2021-01-01,buy,10000.00,1.00000000\n2021-01-02,buy,20000.00,1.0000000
 $ echo -e '2021-01-01,buy,10000.00,1.00000000\n2021-01-02,buy,20000.00,1.00000000\n2021-02-01,sell,20000.00,1.50000000' | taxlotter -a hifo
 1,2021-01-01,10000.00,0.50000000
 ```
+
+## Theory of Operation
+
+A little about the code structure.
+
+### TaxLotter.CLI
+This module is the main entry point of the program. It handles parsing arguments, streaming input into `TaxLotter.compute/2`, and printing errors and final output.
+
+### TaxLotter.compute/2
+This function lays out the map/reduce flow to compute tax lots.
+1. Add an index to lines (useful for error reporting)
+2. Validate each line (creates Trade structs)
+3. Pass the list of Trade structs to the process lots reducer
+4. Return the list of computed lots
+
+### TaxLotter.Operators
+This is the meat and potatoes of the program.
+
+**validate_trade/1**
+This functions validates the input received by creating a Trade Ecto schema and running changeset validators. If validation fails, it raises an InvalidTrade error with line number and changeset validation messages.
+
+**process_lots/2**
+Two implementations are provided that match on the trade type.
+
+In the case of a buy, this function either adds a new lot to the accumulator or updates an existing lot if a lot already exists with the same date as the trade being processed. The update operation adds the quantity from the trade to the lot and calculates a new averaged price.
+
+In the case of a sell, this function sorts the accumulated lots based on the chosen algorithm and then recursively removes quantity from the lots until all the trade's quantity is consumed. It updates the accumulator with whatever lots are remaining.
