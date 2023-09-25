@@ -74,12 +74,14 @@ This function lays out the map/reduce flow to compute tax lots.
 4. Return the list of computed lots
 
 ### TaxLotter.Operators
-This is the meat and potatoes of the program.
+This is the meat of the program.
 
 **validate_trade/1**
+
 This functions validates the input received by creating a Trade Ecto schema and running changeset validators. If validation fails, it raises an InvalidTrade error with line number and changeset validation messages.
 
 **process_lots/2**
+
 Two implementations are provided that match on the trade type.
 
 In the case of a buy, this function either adds a new lot to the accumulator or updates an existing lot if a lot already exists with the same date as the trade being processed. The update operation adds the quantity from the trade to the lot and calculates a new averaged price.
